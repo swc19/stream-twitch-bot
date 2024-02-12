@@ -41,9 +41,27 @@ const CUSTOM_TEXT_COMMANDS = {
     }
 }
 
+// cooldowns in seconds
+const COOLDOWNS = {
+    "discord": 120,
+    "donate": 60,
+    "twitter": 120,
+    "geoguessr": 120,
+    
+    "followage": 600,
+    "lurk": 120,
+    "so": 300,
+    "shoutout": 300,
+}
+
+let last_used = {}
+
 // Called every time a message comes in
 async function onMessageHandler(target, context, msg, self) {
+    if (self) { return; } // Ignore messages from the bot
+
     const USER_PERMS = () => {
+        // set up permission levels for commands that require it.
         if(context.username === "swooce19"){
             return 4;
         } else if(context.mod){
@@ -55,42 +73,55 @@ async function onMessageHandler(target, context, msg, self) {
         }
     }
 
-
-    if (self) { return; } // Ignore messages from the bot
     const [first, ...second] = msg.split(" ");
     // ...second is [] of each word after it, even if it's one word
+
     const command = first.slice(1);
+
     if(first.startsWith(COMMAND_START_CHAR)){
-        if(Object.keys(CUSTOM_TEXT_COMMANDS).includes(command)){
-            if(CUSTOM_TEXT_COMMANDS[command].enabled) {
-                client.say(target, CUSTOM_TEXT_COMMANDS[command].text);
-                console.log(`* Executed ${first} for user ${context.username}`)
-                return;
+        const off_cooldown = () => {
+            // check if the given command is on cooldown
+            if(COOLDOWNS[command]){
+                return (Date.now() - last_used[command])/1000 > COOLDOWNS[command]
+            } else {
+                return true;
             }
         }
-        switch (command) {
-            case 'followage':
-                const followage = await getFollowage(context);
-                client.say(target, followage);
-                break;
-            case "lurk":
-                client.say(target, `Thanks for lurking, ${context.username}! Blobpeek`);
-                break;
-            case "so":
-            case "shoutout":
-                if(USER_PERMS() >= 3){
-                    if(second[0]){
-                        client.say(target, `Check out ${second[0]} at https://twitch.tv/${second[0]}!`);
-                    } else {
-                        client.say(target, `Please specify a user to shoutout.`);
-                    }
+        if(USER_PERMS() >= 3 || !last_used[command] || (last_used[command] && off_cooldown())){
+            // currently, mods and streamer can use any command off cooldown
+            if(Object.keys(CUSTOM_TEXT_COMMANDS).includes(command)){
+                if(CUSTOM_TEXT_COMMANDS[command].enabled) {
+                    client.say(target, CUSTOM_TEXT_COMMANDS[command].text);
+                    console.log(`* Executed ${first} for user ${context.username}`)
+                    last_used[command] = Date.now();
+                    return;
                 }
-                break;
-            default:
-                break;
-                
+            }
+            switch (command) {
+                case 'followage':
+                    const followage = await getFollowage(context);
+                    client.say(target, followage);
+                    break;
+                case "lurk":
+                    client.say(target, `Thanks for lurking, ${context.username}! Blobpeek`);
+                    break;
+                case "so":
+                case "shoutout":
+                    if(USER_PERMS() >= 3){
+                        if(second[0]){
+                            client.say(target, `Check out ${second[0]} at https://twitch.tv/${second[0]}!`);
+                        } else {
+                            client.say(target, `Please specify a user to shoutout.`);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+                    
+            }
+            console.log(`* Executed ${first} for user ${context.username}`)
+            last_used[command] = Date.now();
         }
-        console.log(`* Executed ${first} for user ${context.username}`)
     }
 }
 

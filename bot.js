@@ -50,8 +50,6 @@ const COOLDOWNS = {
     
     "followage": 600,
     "lurk": 120,
-    "so": 300,
-    "shoutout": 300,
 }
 
 let last_used = {}

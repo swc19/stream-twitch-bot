@@ -1,0 +1,15 @@
+{
+  "name": "stream-twitch-bot",
+  "version": "0.0.0",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "swooce",
+  "license": "MIT",
+  "dependencies": {
+    "tmi": "^2.0.0",
+    "tmi.js": "^1.8.5"
+  },
+  "description": ""
+}

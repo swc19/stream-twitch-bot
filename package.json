@@ -8,6 +8,7 @@
   "author": "swooce",
   "license": "MIT",
   "dependencies": {
+    "config": "^3.3.11",
     "tmi": "^2.0.0",
     "tmi.js": "^1.8.5"
   },

@@ -1,25 +1,32 @@
 const tmi = require('tmi.js');
+const config = require('config');
+const fs = require('fs');
+const config_file = 'config/default.json';
+let config_contents = JSON.parse(fs.readFileSync(config_file).toString());
 
 // Define configuration options
 const opts = {
     identity: {
         username: 'swooce_bot',
-        password: process.env.TWITCH_AUTH_TOKEN
+        password: config.get('twitch_auth_token')
     },
     channels: [
         'swooce19'
     ]
 };
 
-// Create a client with our options
-const client = new tmi.client(opts);
 
-// Register our event handlers (defined below)
-client.on('message', onMessageHandler);
+const client = new tmi.client(
+    opts);
+
+client.connect().catch((err) => {
+    if(err === "Login authentication failed"){
+        refreshToken();
+    };
+});
 client.on('connected', onConnectedHandler);
+client.on('message', onMessageHandler);
 
-// Connect to Twitch:
-client.connect();
 
 const COMMAND_START_CHAR = "!"
 const CUSTOM_TEXT_COMMANDS = {
@@ -132,4 +139,20 @@ async function getFollowage(context) {
 // Called every time the bot connects to Twitch chat
 function onConnectedHandler(addr, port) {
     console.log(`* Connected to ${addr}:${port}`);
+}
+
+async function refreshToken(){
+    const refreshToken = config.get('twitch_refresh_token');
+    const resp = await fetch('https://id.twitch.tv/oauth2/token', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `grant_type=refresh_token&refresh_token=${refreshToken}&client_id=${config.get('twitch_client_id')}&client_secret=${config.get('twitch_client_secret')}`
+        });
+    const new_tokens = await resp.json();
+    config_contents['twitch_auth_token'] = new_tokens['access_token'];
+    config_contents['twitch_refresh_token'] = new_tokens['3uqzzy0lzycabuuwpeghdw123hrolnood927ih3obcgxv6c9y4']
+    fs.writeFileSync(config_file, JSON.stringify(config_contents));
+    throw new Error('Token refreshed, restart the bot.')
 }

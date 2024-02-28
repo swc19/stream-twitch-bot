@@ -43,20 +43,26 @@ const CUSTOM_TEXT_COMMANDS = {
         "enabled": true
     },
     "geoguessr": {
-        "text": "My Geoguessr profile is here: https://www.geoguessr.com/user/60d1134800ea7b000152a728",
+        "text": "My Geoguessr profile is here: https://www.geoguessr.com/user/60d1134800ea7b000152a728, and you can sign up with my link here and save 40%! https://www.geoguessr.com/referral-program/CO78-SFGL-6R3Q",
+        "enabled": true
+    },
+    "flags": {
+        "text": "My progress on contacting every state, province and country for a flag/license plate is here: http://tinyurl.com/swooceFlagProject",
         "enabled": true
     }
 }
 
+const CHATGUESSR_COMMANDS = ["cg", "cgflags", "best", "me", "clear", "randomplonk"]
 // cooldowns in seconds
 const COOLDOWNS = {
-    "discord": 120,
-    "donate": 60,
-    "twitter": 120,
-    "geoguessr": 120,
+    "discord": 30,
+    "donate": 30,
+    "twitter": 30,
+    "geoguessr": 30,
     
-    "followage": 600,
-    "lurk": 120,
+    "followage": 300,
+    "lurk": 30,
+    "flags": 30,
 }
 
 let last_used = {}
@@ -83,6 +89,7 @@ async function onMessageHandler(target, context, msg, self) {
 
     const command = first.slice(1);
 
+	if(CHATGUESSR_COMMANDS.includes(command)){ return; }
     if(first.startsWith(COMMAND_START_CHAR)){
         const off_cooldown = () => {
             // check if the given command is on cooldown
@@ -152,7 +159,7 @@ async function refreshToken(){
         });
     const new_tokens = await resp.json();
     config_contents['twitch_auth_token'] = new_tokens['access_token'];
-    config_contents['twitch_refresh_token'] = new_tokens['3uqzzy0lzycabuuwpeghdw123hrolnood927ih3obcgxv6c9y4']
+    config_contents['twitch_refresh_token'] = new_tokens['refresh_token']
     fs.writeFileSync(config_file, JSON.stringify(config_contents));
     throw new Error('Token refreshed, restart the bot.')
 }

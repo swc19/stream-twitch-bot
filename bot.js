@@ -30,6 +30,7 @@ client.on('message', onMessageHandler);
 
 const COMMAND_START_CHAR = "!"
 const CUSTOM_TEXT_COMMANDS = {
+    // simple commands that exclusively return a string, does not take in any context or api
     "discord": {
         "text": "My Discord can be found here: discord.gg/35dfPZY",
         "enabled": true
@@ -50,11 +51,11 @@ const CUSTOM_TEXT_COMMANDS = {
         "text": "My progress on contacting every state, province and country for a flag/license plate is here: http://tinyurl.com/swooceFlagProject",
         "enabled": false
     },
-	"confidence": {
+    "confidence": {
 		"text": "I mapped out my confidence in each Geoguessr country: http://tinyurl.com/swooceGeoConfidence",
-		"enabled": true
+		"enabled": false
 	},
-	"gcl": {
+    "gcl": {
 		"text": "I'm in Division 7 in the Geoguessr Challenge League for Season 5! https://docs.google.com/spreadsheets/d/1LDuySvElv31l-uq37d7215PG1Ew2C88d4ahx209MvjU/edit?usp=sharing",
 		"enabled": true
 	}
@@ -62,17 +63,24 @@ const CUSTOM_TEXT_COMMANDS = {
 
 const CHATGUESSR_COMMANDS = ["cg", "cgflags", "best", "me", "clear", "randomplonk"]
 // cooldowns in seconds
+// cooldowns are currently global for all users, to avoid spam
 const COOLDOWNS = {
+    // text commands
     "discord": 30,
     "donate": 30,
     "twitter": 30,
     "geoguessr": 30,
-    
-    "followage": 300,
     "lurk": 30,
     "flags": 30,
+    "gcl": 30,
+    
+    // api/function based commands
+    "followage": 300,
+    
 }
 
+// list of the last timestamp a function was used
+// resets every time the bot does
 let last_used = {}
 
 // Called every time a message comes in
@@ -95,13 +103,18 @@ async function onMessageHandler(target, context, msg, self) {
     const [first, ...second] = msg.split(" ");
     // ...second is [] of each word after it, even if it's one word
 
+    // returns the command itself in a normalized fashion
     const command = first.slice(1).toLowerCase();
 
+    // ignore any commands that pertain to the chatguessr bot
+    // just make sure to not make a custom command that's one of those words
 	if(CHATGUESSR_COMMANDS.includes(command)){ return; }
+
     if(first.startsWith(COMMAND_START_CHAR)){
         const off_cooldown = () => {
             // check if the given command is on cooldown
             if(COOLDOWNS[command]){
+                // convert to seconds with the /1000
                 return (Date.now() - last_used[command])/1000 > COOLDOWNS[command]
             } else {
                 return true;
@@ -110,14 +123,17 @@ async function onMessageHandler(target, context, msg, self) {
         if(USER_PERMS() >= 3 || !last_used[command] || (last_used[command] && off_cooldown())){
             // currently, mods and streamer can use any command off cooldown
             if(Object.keys(CUSTOM_TEXT_COMMANDS).includes(command)){
+                // verify that the command is active and valid
                 if(CUSTOM_TEXT_COMMANDS[command].enabled) {
                     client.say(target, CUSTOM_TEXT_COMMANDS[command].text);
                     console.log(`* Executed ${first} for user ${context.username}`)
+                    // add the command and the current timestamp to the list
                     last_used[command] = Date.now();
                     return;
                 }
             }
             switch (command) {
+                // if the command isn't a text command, go through the motions to do the right thing for it
                 case 'followage':
                     const followage = await getFollowage(context);
                     client.say(target, followage);
@@ -125,14 +141,18 @@ async function onMessageHandler(target, context, msg, self) {
                 case "lurk":
                     client.say(target, `Thanks for lurking, ${context.username}! Blobpeek`);
                     break;
+                // so can be an alias for shoutout, so just accept both
                 case "so":
                 case "shoutout":
+                    // only mods and streamer can shoutout
                     if(USER_PERMS() >= 3){
                         if(second[0]){
+                            // this can technically be used for any string, not a lot of validation here (not a big deal)
 							let user = second[0];
 							if(user.startsWith("@")){user = user.slice(1);}
                             client.say(target, `Check out ${user} at https://twitch.tv/${user}!`);
                         } else {
+                            // soft error if there's no user
                             client.say(target, `Please specify a user to shoutout.`);
                         }
                     }
@@ -141,7 +161,9 @@ async function onMessageHandler(target, context, msg, self) {
                     break;
                     
             }
+            // just log it for my viewing later i guess
             console.log(`* Executed ${first} for user ${context.username}`)
+            // store the timestamp
             last_used[command] = Date.now();
         }
     }
@@ -159,6 +181,8 @@ function onConnectedHandler(addr, port) {
 }
 
 async function refreshToken(){
+    // refresh the api token on twitch's end
+    // the api token resets every day or so, so this is basically needed every run
     const refreshToken = config.get('twitch_refresh_token');
     const resp = await fetch('https://id.twitch.tv/oauth2/token', {
             method: 'POST',

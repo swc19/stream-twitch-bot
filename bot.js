@@ -35,7 +35,7 @@ const CUSTOM_TEXT_COMMANDS = {
         "enabled": true
     },
     "donate": {
-        "text": "If you feel so inclined to donate, the link is here: https://streamlabs.com/swc19 All donations are optional and directly benefit the stream!",
+        "text": "If you feel so inclined to donate, the link is here: https://streamelements.com/swooce19/tip All donations are optional and directly benefit the stream!",
         "enabled": true
     },
     "twitter": {
@@ -48,8 +48,16 @@ const CUSTOM_TEXT_COMMANDS = {
     },
     "flags": {
         "text": "My progress on contacting every state, province and country for a flag/license plate is here: http://tinyurl.com/swooceFlagProject",
-        "enabled": true
-    }
+        "enabled": false
+    },
+	"confidence": {
+		"text": "I mapped out my confidence in each Geoguessr country: http://tinyurl.com/swooceGeoConfidence",
+		"enabled": true
+	},
+	"gcl": {
+		"text": "I'm in Division 7 in the Geoguessr Challenge League for Season 5! https://docs.google.com/spreadsheets/d/1LDuySvElv31l-uq37d7215PG1Ew2C88d4ahx209MvjU/edit?usp=sharing",
+		"enabled": true
+	}
 }
 
 const CHATGUESSR_COMMANDS = ["cg", "cgflags", "best", "me", "clear", "randomplonk"]
@@ -87,7 +95,7 @@ async function onMessageHandler(target, context, msg, self) {
     const [first, ...second] = msg.split(" ");
     // ...second is [] of each word after it, even if it's one word
 
-    const command = first.slice(1);
+    const command = first.slice(1).toLowerCase();
 
 	if(CHATGUESSR_COMMANDS.includes(command)){ return; }
     if(first.startsWith(COMMAND_START_CHAR)){
@@ -121,7 +129,9 @@ async function onMessageHandler(target, context, msg, self) {
                 case "shoutout":
                     if(USER_PERMS() >= 3){
                         if(second[0]){
-                            client.say(target, `Check out ${second[0]} at https://twitch.tv/${second[0]}!`);
+							let user = second[0];
+							if(user.startsWith("@")){user = user.slice(1);}
+                            client.say(target, `Check out ${user} at https://twitch.tv/${user}!`);
                         } else {
                             client.say(target, `Please specify a user to shoutout.`);
                         }
